@@ -1,0 +1,12 @@
+{
+  "name": "ouroboros-qa",
+  "displayName": "Ouroboros QA Regress",
+  "version": "1.0.0",
+  "description": "QA-регресс живого инстанса Ouroboros: 16 e2e-кейсов, программная верификация без LLM + двойные vision-судьи, откаты, отчёт",
+  "author": {
+    "name": "Andrey Kaznacheev",
+    "email": "a.kaznacheev@sdgroup.ai"
+  },
+  "keywords": ["ouroboros", "qa", "regression", "testing"],
+  "skills": "./skills/"
+}

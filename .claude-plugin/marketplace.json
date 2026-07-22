@@ -1,0 +1,15 @@
+{
+  "name": "ouroboros-qa",
+  "owner": {
+    "name": "Andrey Kaznacheev",
+    "email": "a.kaznacheev@sdgroup.ai"
+  },
+  "description": "QA-инструменты для Ouroboros",
+  "plugins": [
+    {
+      "name": "ouroboros-qa",
+      "source": "./",
+      "description": "QA-регресс живого инстанса Ouroboros (16 кейсов, /qa-regress)"
+    }
+  ]
+}
