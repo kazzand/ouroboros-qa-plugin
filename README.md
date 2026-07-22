@@ -10,12 +10,28 @@ BLOCKED / INFRA_DRIFT.
 ## Установка
 
 ```bash
-# один раз: добавить маркетплейс и поставить плагин
-/plugin marketplace add <owner>/ouroboros-qa-plugin
+pip3 install websockets                              # зависимость чат-клиента
+# в Claude Code:
+/plugin marketplace add kazzand/ouroboros-qa-plugin
 /plugin install ouroboros-qa@ouroboros-qa
+```
 
-# зависимость чат-клиента
+### Агентная установка
+
+Можно не делать руками: скопируй агенту (Claude Code) одним сообщением —
+
+> Установи плагин QA-регресса Уробороса: выполни `pip3 install websockets`,
+> затем `claude plugin marketplace add kazzand/ouroboros-qa-plugin` и
+> `claude plugin install ouroboros-qa@ouroboros-qa`. Проверь, что скилл
+> `ouroboros-qa:qa-regress` появился в списке доступных (может понадобиться
+> `/reload-plugins` или новая сессия), и коротко отчитайся.
+
+Те же команды работают и в скриптах/онбординге без интерактива:
+
+```bash
 pip3 install websockets
+claude plugin marketplace add kazzand/ouroboros-qa-plugin
+claude plugin install ouroboros-qa@ouroboros-qa
 ```
 
 ## Требования
