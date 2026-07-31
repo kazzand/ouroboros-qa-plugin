@@ -32,15 +32,23 @@ HARNESS_DIR = pathlib.Path(__file__).resolve().parent
 
 def _detect_root():
     """Корень инсталляции Ouroboros (~/Ouroboros: data/ + repo/).
-    Приоритет: env QA_ROOT → cwd (плагин: харнесс в кэше плагина, запуск из
-    папки Уробороса) → родитель qa/ (локальная раскладка qa/harness)."""
+    Приоритет: env QA_ROOT → cwd. Fail closed: каталог плагина/скилла не
+    является корнем живого инстанса и никогда не используется как fallback."""
     env = os.environ.get("QA_ROOT")
     if env:
-        return pathlib.Path(env)
-    cwd = pathlib.Path.cwd()
-    if (cwd / "data").is_dir() and (cwd / "repo").is_dir():
-        return cwd
-    return HARNESS_DIR.parents[1]
+        root = pathlib.Path(env).expanduser().resolve()
+        if (root / "data").is_dir() and (root / "repo").is_dir():
+            return root
+        raise RuntimeError(
+            f"QA_ROOT={root} не является корнем Ouroboros: нужны data/ и repo/"
+        )
+    root = pathlib.Path.cwd().resolve()
+    if (root / "data").is_dir() and (root / "repo").is_dir():
+        return root
+    raise RuntimeError(
+        "корень Ouroboros не найден: запусти из каталога с data/ и repo/ "
+        "или передай QA_ROOT явно"
+    )
 
 
 ROOT = _detect_root()

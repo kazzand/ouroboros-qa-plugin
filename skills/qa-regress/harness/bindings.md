@@ -25,6 +25,7 @@ INFRA_DRIFT: исполнитель изучает `repo/docs/ARCHITECTURE.md` (
     "tasks_create": "POST /api/tasks",
     "tasks_list": "GET /api/tasks?status=<csv>&limit=<n>",
     "task_get": "GET /api/tasks/{task_id}",
+    "task_cancel": "POST /api/tasks/{task_id}/cancel",
     "chat_ws": "WS /ws",
     "chat_upload": "POST /api/chat/upload",
     "projects_list": "GET /api/projects",

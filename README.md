@@ -1,4 +1,4 @@
-# Ouroboros QA Regress — плагин Claude Code
+# Ouroboros QA Regress — плагин Claude Code и Codex
 
 QA-регресс живого инстанса [Ouroboros](https://github.com/razzant/ouroboros):
 16 e2e-кейсов «как человек» — от смоука и памяти сквозь рестарт до
@@ -9,39 +9,52 @@ BLOCKED / INFRA_DRIFT.
 
 ## Установка
 
+Общая Python-зависимость чат-клиента:
+
 ```bash
-pip3 install websockets                              # зависимость чат-клиента
-# в Claude Code:
+python3 -m pip install "websockets>=12,<17"
+```
+
+### Claude Code
+
+В интерактивной сессии:
+
+```text
 /plugin marketplace add kazzand/ouroboros-qa-plugin
 /plugin install ouroboros-qa@ouroboros-qa
 ```
 
-### Агентная установка
-
-Можно не делать руками: скопируй агенту (Claude Code) одним сообщением —
-
-> Установи плагин QA-регресса Уробороса: выполни `pip3 install websockets`,
-> затем `claude plugin marketplace add kazzand/ouroboros-qa-plugin` и
-> `claude plugin install ouroboros-qa@ouroboros-qa`. Проверь, что скилл
-> `ouroboros-qa:qa-regress` появился в списке доступных (может понадобиться
-> `/reload-plugins` или новая сессия), и коротко отчитайся.
-
-Те же команды работают и в скриптах/онбординге без интерактива:
+Для скрипта/онбординга:
 
 ```bash
-pip3 install websockets
 claude plugin marketplace add kazzand/ouroboros-qa-plugin
 claude plugin install ouroboros-qa@ouroboros-qa
 ```
 
+Может понадобиться `/reload-plugins` или новая сессия.
+
+### Codex
+
+```bash
+codex plugin marketplace add kazzand/ouroboros-qa-plugin
+codex plugin add ouroboros-qa@ouroboros-qa
+```
+
+После установки открой новую задачу Codex, чтобы она подхватила скилл.
+
 ## Требования
 
 - Запущенный инстанс Ouroboros (web UI/API на 127.0.0.1:8765).
-- Claude Code запускается ИЗ корня инсталляции Ouroboros (`~/Ouroboros` —
-  каталог, где лежат `data/` и `repo/`): харнесс определяет корень по cwd.
+- Claude Code или Codex запускается ИЗ корня инсталляции Ouroboros
+  (`~/Ouroboros` — каталог, где лежат `data/` и `repo/`). Неверный cwd или
+  `QA_ROOT` останавливает харнесс до любых записей.
 - macOS-разрешения Screen Recording/Accessibility — для computer-use кейса.
-- Опционально: плагин claudexor — второй vision-судья. Без него vision-кейсы
-  дают NEEDS_HUMAN вместо PASS (одним судьёй PASS не выносится).
+- Для полного прогона в Codex рекомендуется Codex app с Browser. В CLI можно
+  использовать Playwright; без browser/DOM/screenshot-возможностей
+  затронутые кейсы получают BLOCKED.
+- Нужны два независимых vision-судьи. Claude Code использует Agent + claudexor
+  (либо два изолированных Agent); Codex — два свежих сабагента. Одним судьёй
+  PASS не выносится: результат будет NEEDS_HUMAN.
 
 ## Запуск
 
@@ -49,6 +62,19 @@ claude plugin install ouroboros-qa@ouroboros-qa
 cd ~/Ouroboros && claude
 > /ouroboros-qa:qa-regress       # все 16 кейсов, ~1.5–2 часа, ~$10–20
 > /ouroboros-qa:qa-regress 00    # дешёвое ядро 000–006, ~20 минут
+```
+
+Codex:
+
+```bash
+cd ~/Ouroboros && codex
+```
+
+Затем в задаче:
+
+```text
+$ouroboros-qa:qa-regress         # все 16 кейсов, ~1.5–2 часа, ~$10–20
+$ouroboros-qa:qa-regress 00      # дешёвое ядро 000–006, ~20 минут
 ```
 
 Во время прогона за маком не работать: кейсы двигают реальные окна и мышь.
@@ -64,14 +90,19 @@ cd ~/Ouroboros && claude
   /api/update/*, правка settings.json (кроме аварийного восстановления из
   бэкапа при CRITICAL).
 - Отчёты и артефакты: `qa/runs/<дата>/` в рабочей папке.
-- Тесты самого харнесса: `python3 "$(plugin)/skills/qa-regress/harness/test_checks.py"`
-  (63 проверки, без касания живой системы).
+- Тесты самого харнесса из корня checkout:
+  `python3 skills/qa-regress/harness/test_checks.py` (без сети и без касания
+  живой системы).
 
 ## Устройство
 
 ```
+.claude-plugin/            ← manifest/marketplace Claude Code
+.codex-plugin/plugin.json  ← manifest Codex
+.agents/plugins/           ← marketplace Codex
 skills/qa-regress/
 ├── SKILL.md      ← оркестратор (исполнитель ≠ судья, CRITICAL-протокол)
+├── agents/       ← метаданные и explicit-only policy для Codex
 ├── cases/        ← 16 кейсов (frontmatter: канал, чеки, vision-рубрики)
 └── harness/
     ├── checks.py     ← программный верификатор (stdlib, без LLM)

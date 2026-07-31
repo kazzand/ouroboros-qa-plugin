@@ -20,10 +20,17 @@ import mimetypes
 import pathlib
 import sys
 import time
+import urllib.parse
 import urllib.request
 import uuid
 
-import websockets
+try:
+    import websockets
+except ModuleNotFoundError as exc:
+    raise SystemExit(
+        'Не установлен пакет websockets. Выполни: '
+        'python3 -m pip install "websockets>=12,<17"'
+    ) from exc
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from checks import ROOT, load_bindings, iter_jsonl  # noqa: E402
@@ -54,8 +61,20 @@ def upload_attachment(bindings, path):
             "mime": resp.get("mime", mime)}
 
 
+def websocket_url(api_base):
+    """Преобразовать http(s) API base в корректный ws(s) URL."""
+    parsed = urllib.parse.urlsplit(api_base)
+    schemes = {"http": "ws", "https": "wss", "ws": "ws", "wss": "wss"}
+    if parsed.scheme not in schemes or not parsed.netloc:
+        raise ValueError(f"некорректный api_base: {api_base!r}")
+    path = parsed.path.rstrip("/") + "/ws"
+    return urllib.parse.urlunsplit(
+        (schemes[parsed.scheme], parsed.netloc, path, "", "")
+    )
+
+
 async def ws_send(bindings, text, attachments, chat_id):
-    ws_url = bindings["api_base"].replace("http://", "ws://") + "/ws"
+    ws_url = websocket_url(bindings["api_base"])
     cmid = f"qa-{uuid.uuid4().hex[:12]}"
     msg = {
         "type": "chat",
@@ -132,8 +151,11 @@ def now_iso():
 
 def cmd_send(args):
     bindings = load_bindings()
-    if not args.no_quiet:
-        channel_quiet(bindings, args.chat_id, quiet_sec=args.quiet_sec)
+    if not args.no_quiet and not channel_quiet(
+            bindings, args.chat_id, quiet_sec=args.quiet_sec):
+        print("канал не затих за отведённое время; сообщение не отправлено",
+              file=sys.stderr)
+        sys.exit(2)
     attachments = [upload_attachment(bindings, a) for a in args.attach]
     ts_fence = now_iso()
     cmid = asyncio.run(ws_send(bindings, args.text, attachments, args.chat_id))

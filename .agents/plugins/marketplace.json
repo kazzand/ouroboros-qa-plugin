@@ -1,0 +1,20 @@
+{
+  "name": "ouroboros-qa",
+  "interface": {
+    "displayName": "Ouroboros QA"
+  },
+  "plugins": [
+    {
+      "name": "ouroboros-qa",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}
