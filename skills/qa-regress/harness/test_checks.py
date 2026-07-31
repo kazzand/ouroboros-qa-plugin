@@ -1,26 +1,27 @@
 #!/usr/bin/env python3
 """Фикстурные тесты checks.py: каждый примитив — позитив и негатив.
 
-Запуск: python3 qa/harness/test_checks.py
-Строит временный QA_ROOT (фейковые data/, git-репа, локальный HTTP-мок API)
+Запуск: python3 skills/qa-regress/harness/test_checks.py
+Строит временный QA_ROOT (фейковые data/, git-репа, in-process mock API)
 и гоняет примитивы напрямую. Ничего не трогает в живой системе.
 """
 
 import hashlib
-import http.server
 import json
 import os
 import pathlib
 import subprocess
 import sys
 import tempfile
-import threading
 
 TMP = pathlib.Path(tempfile.mkdtemp(prefix="qa-checks-test-"))
+(TMP / "data").mkdir()
+(TMP / "repo").mkdir()
 os.environ["QA_ROOT"] = str(TMP)
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import checks  # noqa: E402
+import chat  # noqa: E402
 from checks import Drift, Fail, Blocked  # noqa: E402
 
 PASSED, FAILED = [], []
@@ -121,33 +122,29 @@ def build_fixtures():
     return base_sha
 
 
-class MockAPI(http.server.BaseHTTPRequestHandler):
-    # Формы ответов — как в реальном гейтвее (queue_snapshot / api_ouroboroshub_installed).
-    ROUTES = {
-        "/api/state": {"supervisor_ready": True, "spent_usd": 1.0},
-        "/api/projects": {"projects": [{"id": "p1", "name": "QA-Project-abc123"}]},
-        "/api/skills/lifecycle-queue": {"active": None, "events": [
-            {"target": "hello-widget", "kind": "install", "status": "succeeded"}]},
-        "/api/marketplace/ouroboroshub/installed": {"count": 1, "skills": [
-            {"name": "hello-widget"}]},
-    }
+MOCK_ROUTES = {
+    # Формы ответов — как в реальном гейтвее
+    # (queue_snapshot / api_ouroboroshub_installed).
+    "/api/state": {"supervisor_ready": True, "spent_usd": 1.0},
+    "/api/projects": {"projects": [{"id": "p1", "name": "QA-Project-abc123"}]},
+    "/api/skills/lifecycle-queue": {"active": None, "events": [
+        {"target": "hello-widget", "kind": "install", "status": "succeeded"}]},
+    "/api/marketplace/ouroboroshub/installed": {"count": 1, "skills": [
+        {"name": "hello-widget"}]},
+}
 
-    def do_GET(self):
-        body = self.ROUTES.get(self.path.split("?")[0])
-        self.send_response(200 if body is not None else 404)
-        self.send_header("Content-Type", "application/json")
-        self.end_headers()
-        self.wfile.write(json.dumps(body or {"error": "nf"}).encode())
 
-    def log_message(self, *a):
-        pass
+def mock_http_json(_bindings, path):
+    """Детерминированный API mock без loopback bind (Codex sandbox-safe)."""
+    route = path.split("?")[0]
+    if route not in MOCK_ROUTES:
+        raise Drift(f"{route} -> 404 (mock)")
+    return MOCK_ROUTES[route]
 
 
 def main():
     base_sha = build_fixtures()
-    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), MockAPI)
-    threading.Thread(target=srv.serve_forever, daemon=True).start()
-    os.environ["QA_API_BASE"] = f"http://127.0.0.1:{srv.server_address[1]}"
+    checks.http_json = mock_http_json
 
     b = checks.load_bindings()
     rd = TMP / "run/000"
@@ -318,7 +315,35 @@ checks:
     (PASSED if checks._unquote("foo  # коммент") == "foo" else FAILED).append(
         "_unquote: хвостовой комментарий срезан")
 
-    srv.shutdown()
+    ws_urls = {
+        "http://127.0.0.1:8765": "ws://127.0.0.1:8765/ws",
+        "http://127.0.0.1:8765/": "ws://127.0.0.1:8765/ws",
+        "https://example.test/api/": "wss://example.test/api/ws",
+    }
+    for api_base, expected in ws_urls.items():
+        actual = chat.websocket_url(api_base)
+        (PASSED if actual == expected else FAILED).append(
+            f"websocket_url {api_base}: {actual} (ожидался {expected})"
+        )
+    expect_exc("websocket_url-invalid", ValueError, chat.websocket_url,
+               "127.0.0.1:8765")
+
+    # Root detection для plugin cache: явный QA_ROOT и cwd проходят только
+    # при наличии data/ + repo/; неверный путь падает до любых записей.
+    expect_ok("detect_root-env", checks._detect_root)
+    invalid_root = TMP / "not-ouroboros"
+    invalid_root.mkdir()
+    os.environ["QA_ROOT"] = str(invalid_root)
+    expect_exc("detect_root-invalid", RuntimeError, checks._detect_root)
+    del os.environ["QA_ROOT"]
+    previous_cwd = pathlib.Path.cwd()
+    os.chdir(TMP)
+    try:
+        expect_ok("detect_root-cwd", checks._detect_root)
+    finally:
+        os.chdir(previous_cwd)
+        os.environ["QA_ROOT"] = str(TMP)
+
     print(f"\n=== {len(PASSED)} passed, {len(FAILED)} failed ===")
     for f in FAILED:
         print("FAILED:", f)

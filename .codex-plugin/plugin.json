@@ -1,0 +1,39 @@
+{
+  "name": "ouroboros-qa",
+  "version": "1.1.0",
+  "description": "QA-регресс живого инстанса Ouroboros: 16 e2e-кейсов, программная верификация, независимые vision-судьи, откаты и отчёт.",
+  "author": {
+    "name": "Andrey Kaznacheev",
+    "email": "a.kaznacheev@sdgroup.ai",
+    "url": "https://github.com/kazzand"
+  },
+  "homepage": "https://github.com/kazzand/ouroboros-qa-plugin",
+  "repository": "https://github.com/kazzand/ouroboros-qa-plugin",
+  "license": "MIT",
+  "keywords": [
+    "ouroboros",
+    "qa",
+    "regression",
+    "testing",
+    "e2e"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Ouroboros QA Regress",
+    "shortDescription": "Защищённый e2e-регресс живого Ouroboros",
+    "longDescription": "Запускает QA-регресс живого инстанса Ouroboros с программными проверками, независимыми vision-судьями, обязательными откатами и итоговым отчётом.",
+    "developerName": "Andrey Kaznacheev",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/kazzand/ouroboros-qa-plugin",
+    "defaultPrompt": [
+      "Запусти дешёвое ядро QA-регресса Ouroboros",
+      "Запусти полный QA-регресс Ouroboros",
+      "Запусти один QA-кейс Ouroboros по его ID"
+    ]
+  }
+}

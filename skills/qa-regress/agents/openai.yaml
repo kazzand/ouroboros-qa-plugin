@@ -1,0 +1,7 @@
+interface:
+  display_name: "Ouroboros QA Regress"
+  short_description: "Защищённый e2e-регресс живого Ouroboros"
+  default_prompt: "Используй $qa-regress для запрошенного QA-регресса Ouroboros и верни путь к отчёту."
+
+policy:
+  allow_implicit_invocation: false
