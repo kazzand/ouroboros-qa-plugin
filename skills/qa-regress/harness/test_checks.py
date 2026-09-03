@@ -59,7 +59,8 @@ def build_fixtures():
         "outcome_axes": {"execution": {"status": "ok"}},
         "result": "Считаю: 17*23. Ответ: 391.",
         "final_answer": "391",
-        "cost_usd": 0.0123,
+        "accounted_upper_bound_usd": 0.0123,
+        "cost_final": True,
     }), encoding="utf-8")
     (TMP / "data/task_results/tsk2.json").write_text(json.dumps({
         "status": "failed",
@@ -259,6 +260,7 @@ def main():
     expect_ok("refusal_evidence+tools", C["refusal_evidence"], b, ctx_tools, None, rd)
     expect_exc("refusal_evidence-", Fail, C["refusal_evidence"], b, ctx, "xyzmarker", rd)
     expect_ok("cost_recorded+", C["cost_recorded"], b, ctx, None, rd)
+    expect_ok("cost_recorded+legacy", C["cost_recorded"], b, ctx_refusal, None, rd)
     expect_exc("cost_recorded-", Fail, C["cost_recorded"], b, ctx_failed, None, rd)
 
     # Пайплайн целиком: frontmatter -> контекст -> checks.json + exit code

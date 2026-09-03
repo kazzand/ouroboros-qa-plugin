@@ -45,6 +45,11 @@ codex plugin add ouroboros-qa@ouroboros-qa
 ## Требования
 
 - Запущенный инстанс Ouroboros (web UI/API на 127.0.0.1:8765).
+- Если инстанс маршрутизирует исполнителей/ревью на подписки (Codex /
+  Claude Code / Cursor через встроенный Claudexor, v7+: строки
+  `agent_session` в `OUROBOROS_SUBAGENTS`) — аккаунты должны быть подключены
+  в Settings → Agents и квота не исчерпана; preflight проверяет это через
+  `GET /api/claudexor/status` и останавливается сам.
 - Claude Code или Codex запускается ИЗ корня инсталляции Ouroboros
   (`~/Ouroboros` — каталог, где лежат `data/` и `repo/`). Неверный cwd или
   `QA_ROOT` останавливает харнесс до любых записей.
@@ -60,7 +65,7 @@ codex plugin add ouroboros-qa@ouroboros-qa
 
 ```bash
 cd ~/Ouroboros && claude
-> /ouroboros-qa:qa-regress       # все 16 кейсов, ~1.5–2 часа, ~$10–20
+> /ouroboros-qa:qa-regress       # все 16 кейсов, ~1.5–2 часа; на OpenRouter ~$10–20, на подписках — квота вместо долларов
 > /ouroboros-qa:qa-regress 00    # дешёвое ядро 000–006, ~20 минут
 ```
 
@@ -73,7 +78,7 @@ cd ~/Ouroboros && codex
 Затем в задаче:
 
 ```text
-$ouroboros-qa:qa-regress         # все 16 кейсов, ~1.5–2 часа, ~$10–20
+$ouroboros-qa:qa-regress         # все 16 кейсов, ~1.5–2 часа; на OpenRouter ~$10–20, на подписках — квота вместо долларов
 $ouroboros-qa:qa-regress 00      # дешёвое ядро 000–006, ~20 минут
 ```
 

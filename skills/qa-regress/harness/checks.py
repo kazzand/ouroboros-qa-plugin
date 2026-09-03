@@ -557,11 +557,18 @@ def check_refusal_evidence(b, ctx, param, rd):
 
 def check_cost_recorded(b, ctx, param, rd):
     tr = load_task_result(b, ctx)
-    field = b["task_result"]["cost_field"]
-    v = tr.get(field)
-    if not isinstance(v, (int, float)):
-        raise Fail(f"{field}={v!r} — стоимость не записана")
-    return f"{field}=${v:.4f}"
+    # Пара имён: честное ABI 7.0 → легаси ≤6.x (см. bindings.md). bool —
+    # подкласс int, True тут не «записанная стоимость».
+    fields = b["task_result"]["cost_fields"]
+    for field in fields:
+        v = tr.get(field)
+        if isinstance(v, (int, float)) and not isinstance(v, bool):
+            flags = ", ".join(
+                f"{k}={tr[k]!r}"
+                for k in b["task_result"].get("cost_openness_fields", [])
+                if k in tr)
+            return f"{field}=${v:.4f}" + (f" ({flags})" if flags else "")
+    raise Fail(f"стоимость не записана ни в одном из полей {fields}")
 
 
 CHECKS = {name[len("check_"):]: fn for name, fn in list(globals().items())

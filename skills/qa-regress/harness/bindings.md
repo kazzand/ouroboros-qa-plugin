@@ -11,10 +11,14 @@ INFRA_DRIFT: исполнитель изучает `repo/docs/ARCHITECTURE.md` (
 биндинга в отчёте прогона. Обновление пина применяется только после решения
 Андрея. Каждый прогон меряет текущей пиннед-версией — одинаково.
 
-- Выведено: 2026-07-22
-- SHA Уробороса: 33d6cab1a11a832451d7e412e195c3e171edc32d (v6.73.2)
+- Выведено: 2026-07-22 (v6.73.2, 33d6cab1); ре-пин: 2026-09-03 против
+  v7.0.0-rc.7 (2b8b7903) — все биндинги сверены с деревом rc.7, единственный
+  дрифт: поле стоимости task_result (ABI 7.0 переименовал `cost_usd` →
+  `accounted_upper_bound_usd`, легаси-имя больше не пишется и вычищается из
+  проекций; см. ouroboros/cost_projection.py COST_ALIAS_PAIRS).
 - Источники правды: docs/ARCHITECTURE.md; ouroboros/gateway/{router,tasks,control,ws,logs}.py;
-  ouroboros/task_results.py; supervisor/state.py; web/style.css
+  ouroboros/task_results.py; ouroboros/cost_projection.py;
+  ouroboros/configured_subagents.py; supervisor/state.py; web/style.css
 
 ```json
 {
@@ -35,14 +39,20 @@ INFRA_DRIFT: исполнитель изучает `repo/docs/ARCHITECTURE.md` (
     "hub_uninstall": "POST /api/marketplace/ouroboroshub/uninstall/{name} (name = sanitized имя из installed)",
     "hub_installed": "GET /api/marketplace/ouroboroshub/installed",
     "skills_lifecycle": "GET /api/skills/lifecycle-queue",
-    "extensions_list": "GET /api/extensions"
+    "extensions_list": "GET /api/extensions",
+    "claudexor_status": "GET /api/claudexor/status"
   },
   "task_result": {
     "dir": "data/task_results",
     "settled_statuses": ["completed", "failed", "cancelled", "rejected_duplicate"],
     "success": "status=='completed' and outcome_axes.execution.status=='ok'",
     "answer_fields": ["result", "final_answer"],
-    "cost_field": "cost_usd"
+    "cost_fields": ["accounted_upper_bound_usd", "cost_usd"],
+    "cost_openness_fields": ["cost_final", "unknown_unmetered"]
+  },
+  "routes": {
+    "subagents_setting": "OUROBOROS_SUBAGENTS",
+    "session_kind": "agent_session"
   },
   "state_flags": {
     "file": "data/state/state.json",
@@ -85,3 +95,19 @@ INFRA_DRIFT: исполнитель изучает `repo/docs/ARCHITECTURE.md` (
 
 Все относительные пути — от корня инсталляции (родитель `qa/`, обычно
 `~/Ouroboros/`; переопределяется env `QA_ROOT`).
+
+Семантика новых полей:
+
+- `cost_fields` — упорядоченная пара имён: первое честное (ABI 7.0),
+  второе — read-tolerance для инстансов ≤6.x. Чек берёт первое числовое.
+- `cost_openness_fields` — маркеры честности учёта рядом с суммой
+  (`cost_final=false`, `unknown_unmetered=true` — сумма не окончательная или
+  часть работы шла неметрируемо, например на подписочном harness); чек
+  приводит их в детали, не влияя на вердикт.
+- `routes` — где искать маршрутизацию исполнителей: settings-ключ
+  `OUROBOROS_SUBAGENTS` (структурные строки, без секретов); строка с
+  `route.kind == "agent_session"` означает подписочный harness
+  (codex/claude/cursor через встроенный Claudexor), её цель — `harness[=model]`.
+  Здоровье подписок читается через `claudexor_status` (аккаунты, залогинен ли
+  профиль, снапшоты квот); эндпоинт read-only, `POST /api/claudexor/*`
+  (login/wake/quota/refresh) — owner-действия, харнессу запрещены.

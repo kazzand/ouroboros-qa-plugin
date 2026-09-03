@@ -1,7 +1,7 @@
 {
   "name": "ouroboros-qa",
   "displayName": "Ouroboros QA Regress",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "QA-регресс живого инстанса Ouroboros для Claude Code и Codex: 16 e2e-кейсов, программная верификация + двойные vision-судьи, откаты, отчёт",
   "author": {
     "name": "Andrey Kaznacheev",
